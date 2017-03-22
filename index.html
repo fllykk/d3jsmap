@@ -7,10 +7,10 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <title>D3js Map</title>
-    <meta name="description" content="INFOGRAPH :: Information graphics about 3Bs Research Group">
-    <meta name="abstract" content="INFOGRAPH :: Information graphics about 3Bs Research Group">
-    <meta name="keywords" content="3bs, 3bs.uminho.pt, Rui L. Reis,uminho,University of Minho">
-    <meta name="copyright" content="Copyright 2015 3Bs Research Group">
+    <meta name="description" content="D3js Map">
+    <meta name="abstract" content="D3js Map">
+    <meta name="keywords" content="d3js, D3js Map">
+    <meta name="copyright" content="Copyright 2017">
     <meta name="viewport" content="width=device-width">
 
     <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
@@ -467,19 +467,6 @@ function getIdFromStr(str){
     return str.split(/[- ]+/).pop();
 }
 
-function getRandomInt(min, max) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min)) + min;
-}
-
-//function isOddOrEven(id, value, rdm) {
-function isOddOrEven(id, value) {
-    if (id % 2 == 0)
-        return +value;
-    else
-        return -value;
-}
 
 var circlesCollisions =  [];
 var collisions = function(circle1){
