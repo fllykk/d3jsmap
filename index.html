@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>D3js Map</title>
+    <meta name="description" content="INFOGRAPH :: Information graphics about 3Bs Research Group">
+    <meta name="abstract" content="INFOGRAPH :: Information graphics about 3Bs Research Group">
+    <meta name="keywords" content="3bs, 3bs.uminho.pt, Rui L. Reis,uminho,University of Minho">
+    <meta name="copyright" content="Copyright 2015 3Bs Research Group">
+    <meta name="viewport" content="width=device-width">
+
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/bootstrap-responsive.min.css">
+    <link rel="stylesheet" href="./css/messi.min.css" />
+    <link rel="stylesheet" href="./css/main.css">
+    <link rel="stylesheet" href="./css/stylessss.css">
+
+    <script src="./js/modernizr-2.6.2-respond-1.1.0.min.js"></script>
+    <script src="./js/jquery-1.10.1.min.js"><\/script>
+    <script src="./js/vendor/bootstrap.min.js"></script>
+    <script src="./js/plugins.js"></script>
+    <script src="./js/messi.min.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="http://d3js.org/topojson.v1.min.js"></script>
+    <script src="http://d3js.org/queue.v1.min.js"></script>
+    <script src="./js/main.js"></script>
+
+</head>
+
+<body>
+
+<div class="container">
+<div class="container" id="loader-container"></div>
+<div class="svg-container container" id="main-container">
+
+<!-- <div class="pull-left">
+    <b>Projection:</b>
+    <select id="menu" onchange="config.projection = this.value; makeMap();">
+      <option value="mercator">Mercator</option>
+      <option value="orthographic">Orthographic</option>
+    </select>
+  </div>-->
+
+<div class="pull-left">
+    <b>Set Zoom:</b>
+    <select id="setzoom" onchange="setTranslationScale(this.value); makeMap();">
+        <option value="none">Global</option>
+        <option value="europe">Europe</option>
+        <option value="northamerica">North America</option>
+        <option value="southamerica">South America</option>
+        <option value="asia">Asia</option>
+        <option value="australia">Australia</option>
+        <option value="africa">Africa</option>
+    </select>
+</div>
+</div>
+
+<script>
+function setProjection(value) {
+    //console.log(config);
+    switch (value) {
+        case "mercator":
+            return d3.geo.mercator().translate([config.width / config.tx, config.height / config.ty]).scale(config.scale);
+            break;
+        case "orthographic":
+            //config.tx = 5;
+            //config.ty = 1;
+            config.scale = 400;
+            return d3.geo.orthographic().translate([config.width / config.tx, config.height / config.ty] ).scale(config.scale).rotate([25, -15,0]);
+            break;
+        default:
+            return d3.geo.mercator().translate([config.width / config.tx, config.height / config.ty]).scale(config.scale);
+    }
+}
+
+function setTranslationScale(value) {
+    switch (value) {
+        case "europe":
+            config.tx = 3;
+            config.ty = 0.9;
+            config.scale = 500;
+            break;
+        case "northamerica":
+            config.tx = 0.55;
+            config.ty = 0.9;
+            config.scale = 800;
+            break;
+        case "southamerica":
+            config.tx = 0.9;
+            config.ty = 2.4;
+            config.scale = 700;
+            break;
+        case "asia":
+            config.tx = -3;
+            config.ty = 1;
+            config.scale = 500;
+            break;
+        case "australia":
+            config.tx = -4.2;
+            config.ty = 2;
+            config.scale = 400;
+            break;
+        case "africa":
+            config.tx = 2;
+            config.ty = 2;
+            config.scale = 500;
+            break;
+        default:
+            config.tx = 2;
+            config.ty = 1.8;
+            config.scale = 140;
+    }
+}
+
+function makeMap() {
+    d3.select("svg").remove();
+    console.log(mydata);
+    var world = mydata.world,
+        data = mydata.points,
+        width = config.width,
+        height = config.height,
+        projection = setProjection(config.projection);
+
+    //console.log(mydata);
+
+    var path = d3.geo.path()
+        .projection(projection);
+
+    path.pointRadius(1);
+
+    var zoom = d3.behavior.zoom()
+        .scaleExtent([1, 8])
+        .on("zoom", zoomed);
+
+
+    var svg = d3.select("body #main-container").append("svg")
+        .attr("preserveAspectRatio", "xMidYMid")
+        .attr("viewBox", "0 0 " + width + " " + height)
+        .attr("width", width)
+        .attr("height", height)
+        .attr("id", "map-partners");
+
+
+
+    var g = svg.append("g")
+        .attr("class", "group-1");
+
+    function zoomed() {
+        d3.select("g.group-1").attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+        console.log(d3.event.scale);
+        d3.select("g.group-2").attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+        var r  = d3.scale.linear().domain([1,8]).range([8,4])
+        d3.selectAll(".point-collaborator").attr("r", r(d3.event.scale));
+        var fsize  = d3.scale.linear().domain([1,8]).range([10,6])
+        d3.selectAll(".txtid").attr("font-size", fsize(d3.event.scale));
+    }
+
+    svg.call(zoom)
+        .call(zoom.event);
+
+    var places = topojson.feature(world, world.objects.places),
+        countries = topojson.feature(world, world.objects.countries);
+
+    var length = data.locations.length;
+    var pops = [];
+    for (var mug = 0; mug < length; mug++) {
+        var pop = data.locations[mug].count;
+        pops.push(Number(pop));
+    }
+    var min = Math.min.apply(Math, pops);
+    var max = Math.max.apply(Math, pops);
+    //console.log(min);
+    var radius = d3.scale.linear()
+        .domain([min, max])
+        .range([2, 50]);
+
+    g.selectAll(".country")
+        .data(countries.features)
+        .enter().append("path")
+        .attr("class", function (d) {
+            return "country " + d.id + " mapcolor" + d.properties.mapcolor9 + " blue"
+        })
+        .attr("d", path);
+
+    // remove Antartida
+    svg.select(".ATA").remove();
+
+    /*<linearGradient xmlns="http://www.w3.org/2000/svg" id="grad">
+     <stop xmlns="http://www.w3.org/2000/svg" style="stop-color:gray;stop-opacity:0.1;" offset="0"/>
+     <stop xmlns="http://www.w3.org/2000/svg" style="stop-color:gray;stop-opacity:0.1;" offset="1"/>
+     </linearGradient>*/
+    gradient = g.append('linearGradient')
+        .attr("id", "gradient")
+        .attr("gradientUnits", "userSpaceOnUse");
+    gradient.append("svg:stop")
+        .attr("offset", "0")
+        .attr("stop-color", "#F35E19")
+        .attr("stop-opacity", .1);
+    gradient.append("svg:stop")
+        .attr("offset", "1")
+        .attr("stop-color", "#F35E19")
+        .attr("stop-opacity", 0.4);
+
+
+
+    g.selectAll("text3")
+        .data(data.coordinates)
+        .enter()
+        .append("path")
+        .attr("class", "arco")
+        .attr("stroke", "url(#gradient)")
+        .attr("fill", "none")
+        .attr("stroke-linecap", "round")
+        //.attr("d",path)
+        .attr("d", function(d){
+            // projection([d.lng, d.lat])
+            //console.log(projection([d.coordinates[1][0],d.coordinates[1][1]] ));
+            return "M" + projection([d.coordinates[0][0],d.coordinates[0][1]])[0] + "," + projection([d.coordinates[0][0],d.coordinates[0][1]])[1]
+                + "L" + projection([d.coordinates[1][0],d.coordinates[1][1]])[0] + "," + projection([d.coordinates[1][0],d.coordinates[1][1]])[1];
+        })
+        .call(lineTransition);
+
+    locations = g.selectAll("circle")
+        .data(data.locations);
+
+    locationsEnter = locations.enter()
+        .append("g")
+        .attr("class", "locations")
+        .attr("id", function(d){return "locations-" + d.id })
+        .attr("posX", function (d) {
+            return projection([d.lng, d.lat])[0]
+        })
+        .attr("posY", function (d) {
+            return projection([d.lng, d.lat])[1]
+        })
+        .attr("transform", function (d) {
+            return "translate(" + projection([d.lng, d.lat])[0] + "," + projection([d.lng, d.lat])[1] + ")"
+        });
+
+    locationsEnter.append("line")
+        .attr("x1", +0)
+        .attr("y1", +0)
+        .attr("x2", +0)
+        .attr("y2", function (d) {
+            var h = 80;
+            var threshold = projection([-6.4642695,47.0826997])[1];
+            console.log("threshold: "+ threshold);
+            //var pos = $("g#locations-" + d.id).offset();
+            //var signal = isOddOrEven(d.id, 1);
+            //console.log(pos);
+            //var x = pos.left;
+            //var y =  pos.top;
+            var posX = parseInt(d3.select("g#locations-" + d.id).attr("posX"));
+            var posY =  parseInt(d3.select("g#locations-" + d.id).attr("posY"));
+            var y = posY;
+            if (posY < threshold){
+                y = posY - h;
+                var signal = -1;
+            }else{
+                y = posY + h;
+                var signal = 1;
+            }
+
+            //console.log("Y: " + d3.select("g#locations-" + d.id).attr("posY"));
+            var r = 8;
+            var c = collisions({id: d.id, s: signal, radius: r, x: posX, y: y});
+
+            //console.log(y);
+            //console.log(c.y);
+            //console.log((c.y + pos.top));
+
+            return (c.y - posY);
+
+        })
+        //.style("stroke", "rgb(0,0,0)")
+        .style("stroke-width", "1")
+        .attr("id", function (d) { return "line-" + d.id })
+        .style("cursor", "pointer")
+        .attr("class", "line cursor-hand orange onhover");
+
+
+    locationsEnter.append("circle")
+        .attr("cx", function (d) {
+            //var line = this.previousSibling;
+            return d3.select("#line-"+d.id).attr("x1");
+        })
+        .attr("cy", function (d) {
+            //var line = this.previousSibling;
+            return d3.select("#line-"+d.id).attr("y1");
+        })
+        .attr("r", 1.5)
+        .attr("class", "city-circle orange onhover")
+        .style("cursor", "pointer")
+        .attr("id", function (d) { return "circle-city-" + d.id });
+
+    locationsCircle = locations.enter()
+        .append("g")
+        .attr("class", "locationss")
+        .attr("transform", function (d) {
+            return "translate(" + projection([d.lng, d.lat])[0] + "," + projection([d.lng, d.lat])[1] + ")"
+        });
+    locationsCircle
+        .append("circle")
+        .attr("cx", function (d) {
+            return d3.select("#line-"+d.id).attr("x2");
+        })
+        .attr("cy", function (d) {
+            return d3.select("#line-"+d.id).attr("y2");
+        })
+        .attr("r", 8)
+        .attr("id", function (d) { return "point-collaborator-" + d.id })
+        .style("cursor", "pointer")
+        .attr("class", "cursor-hand point-collaborator");
+
+    locationsCircle
+        .append("text")
+        .attr("dx", function(d){
+            return d3.select("#line-" + d.id).attr("x2");
+        })
+        .attr("dy", function(d){
+            return parseInt(d3.select("#line-" + d.id).attr("y2"))+4;
+        })
+        .style("fill", "#FFFFFF")
+        .attr("text-anchor", "middle")
+        .attr("font-size", "10px")
+        .attr("id", function (d) { return "txt-id-" + d.id })
+        .attr("class", "txtid cursor-hand onhover")
+        .style("cursor", "pointer")
+        .text(function (d) {
+            return d.id;
+        });
+
+
+
+    var logoX = projection([-40.4804804, 41.44443])[0];
+    var logoY = projection([-40.4804804, 41.44443])[1];
+    var logo_scale = 0.1;
+    var logoScale = d3.scale.linear().domain([320, 1000]).range([22,38]);
+    var logo_circle_radius = logoScale($(window).width());
+    var logo_circle_stroke_width = 2;
+    var logo_scale = (logo_circle_radius * 0.1) / 38;
+
+    var glogo = svg.append("g")
+        .attr("class", "group-2")
+        .attr("transform", "translate(0,0) scale(1) rotate(0)");
+    /*glogo.append("g")
+        .attr("transform", "translate("+ logoX +", "+ logoY +") scale("+logo_scale+",-"+logo_scale+") rotate(0)");*/
+    glogo.append("circle")
+        .attr("cx", logoX)
+        .attr("cy", logoY)
+        .attr("style", "stroke-width: "+logo_circle_stroke_width+"px;")
+        .attr("class", "logo-circle")
+        .attr("r", logo_circle_radius);
+
+   /* glogo.append("g")
+        .attr("transform", "translate("+ (logoX - logo_circle_radius) +", "+ logoY +") scale(1,1) rotate(0)");*/
+
+    glogo.append("g")
+        .attr("transform", "translate("+ (logoX - logo_circle_radius*0.7) +", "+ logoY +") scale("+logo_scale+",-"+logo_scale+") rotate(0)")
+        .selectAll(".logo-path")
+        .data(mydata.logo.paths)
+        .enter()
+        .append("path")
+        .attr("class", "logo")
+        .attr("style", "fill:#FFFFFF;fill-rule:nonzero;stroke:#918779;stroke-width:0")
+        .attr("d", function(d){ return d; } );
+
+
+
+    $(".onhover").on("click", function (){
+        /*$(".messi").*/
+        Messi.load("./partners/"+getIdFromStr($(this).attr("id"))+".txt",
+            {
+                modal: 1,
+                width: $(window).width()*0.8+'px',
+                modalOpacit: 0.4,
+                title: ""
+            })
+        //console.log("#info-box-"+getIdFromStr($(this).attr("id")));
+        //this.style("visibility", null);
+    });
+
+
+}
+
+var mydata = {
+    world: '',
+    points: '',
+    logo: ''
+}
+
+var config = {
+    width: $('#main-container').width(),
+    height: ((3 * parseInt($('#main-container').width())) / 4),
+    projection: "mercator",
+    scale: ($('#main-container').width() - 30) / (2 * Math.PI),
+    tx: 2,
+    ty: 1.4
+}
+
+var myLoader = loader({width: 100, height: 100, container: "#main-container", id: "loader"});
+
+function init() {
+    myLoader();
+    queue()
+        .defer(d3.json, './data/50m.json')
+        .defer(d3.json, './data/partners.json')
+        .defer(d3.json, './data/3bs-logo.json')
+        .await(handleData);
+
+    function handleData(error, world, data, logo) {
+        mydata.world = world;
+        mydata.points = data;
+        mydata.logo = logo;
+        console.log(error);
+        makeMap();
+        $(window).trigger('resize');
+        //remove loader
+        d3.select("body #loader-container svg").remove();
+    }
+
+}
+window.onload = init();
+
+
+$(window).resize(function() {
+    //config.width = $('#main-container').width();
+    //config.height = $('#main-container').height();
+    d3.select("#map-partners").attr("width", $('#main-container').width());
+    d3.select("#map-partners").attr("height", $(window).height());
+});
+
+//d3.select(self.frameElement).style("height", height + "px");
+
+// --- Helper functions (for tweening the path)
+var lineTransition = function lineTransition(path) {
+    path.transition()
+    //NOTE: Change this number (in ms) to make lines draw faster or slower
+        .duration(5500)
+        .attrTween("stroke-dasharray", tweenDash)
+        .each("end", function(d,i) {
+            ////Uncomment following line to re-transition
+            //d3.select(this).call(transition);
+
+            //We might want to do stuff when the line reaches the target,
+            //  like start the pulsating or add a new point or tell the
+            //  NSA to listen to this guy's phone calls
+            //doStuffWhenLineFinishes(d,i);
+        });
+};
+var tweenDash = function tweenDash() {
+    //This function is used to animate the dash-array property, which is a
+    //  nice hack that gives us animation along some arbitrary path (in this
+    //  case, makes it look like a line is being drawn from point A to B)
+    var len = this.getTotalLength(),
+        interpolate = d3.interpolateString("0," + len, len + "," + len);
+
+    return function(t) { return interpolate(t); };
+};
+
+function getIdFromStr(str){
+    return str.split(/[- ]+/).pop();
+}
+
+function getRandomInt(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min)) + min;
+}
+
+//function isOddOrEven(id, value, rdm) {
+function isOddOrEven(id, value) {
+    if (id % 2 == 0)
+        return +value;
+    else
+        return -value;
+}
+
+var circlesCollisions =  [];
+var collisions = function(circle1){
+    //console.log(circle1);
+    var cLen = circlesCollisions.length;
+    if (!cLen){
+        circlesCollisions.push(circle1);
+        return circle1;
+    }
+    //console.log("loop");
+    //console.log(circlesCollisions);
+    //console.log(circle1);
+    for (i = 0; i < cLen; i++) {
+        var circle2 = circlesCollisions[i];
+        //console.log(circle2);
+
+        var dx = circle1.x - circle2.x;
+        var dy = circle1.y - circle2.y;
+        var distance = Math.sqrt(dx * dx + dy * dy);
+        //console.log("distance: " + distance);
+
+        if (distance <= circle1.radius + circle2.radius) {
+            // collision detected!
+            //console.log("collision: " + circle1.id + " with: " + circle2.id + " y: " + circle2.y);
+            //console.log(circle1.y);
+            if (circle1.s > 0){
+                circle1.y = (circle2.y + 20);
+            }else{
+                circle1.y = (circle2.y - 20);
+            }
+
+            return collisions(circle1);
+        }
+    }
+    //console.log("endloop");
+    //console.log(circle1);
+    circlesCollisions.push(circle1);
+    return circle1;
+}
+
+</script>
+
+</div>
+</body>
+</html>
